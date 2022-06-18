@@ -1,129 +1,137 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# Referência: https://www.youtube.com/watch?v=lPfmfXYPVXY
+# Carteira será um dicionário
 
-# C extensions
-*.so
+from datetime import datetime
+import json 
+#Jjson = javascript objective notation - formato de arquivo
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+try:
+#Módulo 'r'(read) precisa que o arquivo já exista para que possa ser lido, já o 'w'(write) cria um para escrever nele caso o mesmo já não exista.
+    with open('carteira.json', 'r') as file:
+        carteira = json.loads(file.read())
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+    id_transacao = carteira["identificador"]
+    carteira.pop("idtransacao")
+except:
+    carteira = {}
+    id_transacao = 1
+# Try: É uma tratativa de erro. Caso o arquivo esteja rodando pela primeira vez não haverá identificador já que não há transação. 
+# Nesse caso sera setado pelo except uma carteira vazia com id_transação igual a 1.
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+def listarTransacao():
+    if len(carteira) == 0:
+        print("\nSem transações!")
+        return
+    print("\nSuas Transações: ")
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
+    for transacao in sorted(
+        carteira.values(), 
+        key=lambda transacao: str(transacao["identificador"]), reverse=True):
 
-# Translations
-*.mo
-*.pot
+        print(f'{transacao["identificador"]} - {transacao["data"]} - {transacao["descricao"]}: R${transacao["valor"]:.2f}')
+#sorted = ordenar
+#lambda cria uma função anônima
+#:.2f é para mostrar só duas casas após a 
+#Função anônima para ordenar pelo identificador das transações.
+#reverse é para mostrar ao contrário. Do último ao primeiro.
+                
+def adicionarTransacao():
+    global id_transacao
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+    descricao = input('\nDigite a descrição da transação: ')
+    valor = float(input('Digite o valor da transação (com sinal de - se for despesa): '))
+    data = str(datetime.now())
 
-# Flask stuff:
-instance/
-.webassets-cache
+    transacao = {
+        "valor": valor,
+        "descricao": descricao,
+        "data": data,
+        "identificador": str(id_transacao),
+    }
 
-# Scrapy stuff:
-.scrapy
+    carteira["id_" + str(id_transacao)] = transacao
+    id_transacao += 1
+    print('Transação adicionada com sucesso!')
 
-# Sphinx documentation
-docs/_build/
+def deletarTransacao():
+    identificador = "id_" + input('\nDigie o id da transação que quer deletar: ')
+    transacao = carteira.pop(identificador)
+    print(f'A transação {transacao["identificador"]} - "{transacao["descricao"]}", no valor de R${transacao["valor"]:.2f} foi excluída com sucesso!')
+#pop tira algo do dicionário
 
-# PyBuilder
-target/
+def editarTransacao():
+    id_transacao = int(input('\nDigite o id da transação que quer editar: '))
+    identificador = "id_" + str(id_transacao)
 
-# Jupyter Notebook
-.ipynb_checkpoints
+    descricao = input('Digite a nova descrição da transação: ')
+    valor = float(input('Digite o novo valor da transação: '))
+    mudar_data = input('Digite S para mudar a data da transação para a data atual ou N para manter a data antiga: ').upper()
+    if mudar_data == 'S':
+        data = str(datetime.now())
+    else:
+        data = carteira[identificador]["data"]
 
-# IPython
-profile_default/
-ipython_config.py
+    transacao = {
+        "valor": valor,
+        "descricao": descricao,
+        "data": data,
+        "identificador": id_transacao,
+    }
 
-# pyenv
-.python-version
+    carteira["id_" + str(id_transacao)] = transacao
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+    print(f'Transação {id_transacao} editada com sucesso!')
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+def consultarSaldo():
+    saldo = 0
+    for transacao in carteira.values():
+        saldo += transacao["valor"]
 
-# SageMath parsed files
-*.sage.py
+    print(f'seu saldo atual é R${saldo:.2f}')
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+def salvarCarteira():
+    c = carteira.copy()
+    
+    c["idtransacao"] = id_transacao
+    with open('carteira.json', 'w') as file:
+        file.write(json.dumps(c))
 
-# Spyder project settings
-.spyderproject
-.spyproject
+#with open - Abrevia a lógica de abrir e fechar o arquivo
+#transforma o dicionário em uma string pra poder ser buscado pelo python.
+# w (é um módulo de abertura do arquivo)
+# w é o comando de Wrhite para sobreescrever o arquivo
 
-# Rope project settings
-.ropeproject
+while True:
+    op = input("""\nDigie:
+    \nL - listar Transações
+    \nA - Adicionar Transaçao
+    \nD - Deletar Transação
+    \nE - Editar Transação
+    \nC - Consultar saldo
+    \nQ - Sair do Programa
+    \nSua entrada: """).upper()
 
-# mkdocs documentation
-/site
+    if op == 'L':
+        listarTransacao()
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+    elif op == 'A':
+        adicionarTransacao()
+        salvarCarteira()
 
-# Pyre type checker
-.pyre/
+    elif op == 'D':
+        deletarTransacao()
+        salvarCarteira()
+
+    elif op == 'E':
+        editarTransacao()
+        salvarCarteira()
+
+    elif op == 'C':
+        consultarSaldo()
+        
+    elif op == 'Q':
+        exit()
+
+    else: 
+        print("Operação não definida!")
